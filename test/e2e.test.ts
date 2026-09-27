@@ -121,7 +121,7 @@ describe('end-to-end smoke', () => {
   )
 
   it(
-    'runs.cleanup removes both runs/<id>/ and assets/<id>/ older than N days',
+    'playwright.runs.cleanup removes both runs/<id>/ and assets/<id>/ older than N days',
     async () => {
       const target = `http://127.0.0.1:${port}/`
       const workerEntry = join(process.cwd(), 'dist', 'worker.js')

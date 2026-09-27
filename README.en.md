@@ -115,8 +115,8 @@ The orchestrator uses **stdio NDJSON + IPC channel** for transport (no HTTP port
 |---|---|
 | `Chromium failed to launch` | Run `npx playwright install chromium`, then reload the plugin. |
 | `gh issue create` fails silently | Check `gh auth status`; `ghMode=preview` opens a UI panel to re-apply creation. |
-| Workers loop forever | Lower `maxPages` / `maxDurationMs`, then `runs.stop`. |
-| `ENOSPC: no space left` | Drop `screenshotMode` to `off` or clean with RPC `runs.cleanup`. |
+| Workers loop forever | Lower `maxPages` / `maxDurationMs`, then `playwright.runs.stop`. |
+| `ENOSPC: no space left` | Drop `screenshotMode` to `off` or clean with RPC `playwright.runs.cleanup`. |
 | LLM unreachable | Check `OPENFOX_LLM_URL` / `llmEndpoint`; `playwright_discover` returns the verdict. |
 | No issue created under `ghMode=auto` | `gh auth status` non-zero, or > 20 candidates, or missing GitHub repo → fallback BUGS.md. |
 

@@ -20,6 +20,8 @@ export { Orchestrator } from './orchestrator.js'
 export { mergeSettings } from './types.js'
 export { DEFAULTS } from './types.js'
 
+const RPC_NAMESPACE = 'playwright.'
+
 const t2 = (en: string, fr: string): LocalizedString => ({ en, fr })
 
 interface RunSummary {
@@ -269,7 +271,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
         force: {
           type: 'boolean',
           description:
-            'Bypass the same-workdir active-run guard. Use runs.stop first, or force=true to start anyway.',
+            'Bypass the same-workdir active-run guard. Use playwright.runs.stop first, or force=true to start anyway.',
           default: false,
         },
       },
@@ -289,7 +291,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
         if (activeRun && !force) {
           return {
             success: false,
-            error: `a Playwright run is already active for this project (runId=${activeRun.id}). Pass {force:true} to start another or call runs.stop first.`,
+            error: `a Playwright run is already active for this project (runId=${activeRun.id}). Pass {force:true} to start another or call playwright.runs.stop first.`,
           }
         }
         if (mode === 'bugs') {
@@ -378,14 +380,14 @@ export function register(registry: PluginRegistry): () => Promise<void> {
   registry.registerCommand({
     id: 'playwright-status',
     name: 'Playwright: status',
-    prompt: 'Use runs.list RPC to summarize active Playwright runs. Empty input: {{args}}',
+    prompt: 'Use playwright.runs.list RPC to summarize active Playwright runs. Empty input: {{args}}',
     agentMode: 'builder',
   })
   registry.registerCommand({
     id: 'playwright-stop',
     name: 'Playwright: stop',
     prompt:
-      'Use runs.stop RPC with the runId from {{args}}. Confirm with the user before stopping.',
+      'Use playwright.runs.stop RPC with the runId from {{args}}. Confirm with the user before stopping.',
     agentMode: 'builder',
   })
 
@@ -399,7 +401,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
         description:
           'Launch N parallel Playwright agents against a target URL for bug-hunting, FAQ or documentation.',
         prompt:
-          "To audit a project: (1) call playwright_discover to probe the environment; (2) decide mode based on user intent (bugs / faq / docs); (3) call playwright_run with the resolved URL, the chosen mode, and strategy=autodetect unless the user provided one; (4) once the run completes, summarize the findings referenced in runs.get and the Markdown files (BUGS.md / FAQ.md / DOCS.md) created in the project root.",
+          "To audit a project: (1) call playwright_discover to probe the environment; (2) decide mode based on user intent (bugs / faq / docs); (3) call playwright_run with the resolved URL, the chosen mode, and strategy=autodetect unless the user provided one; (4) once the run completes, summarize the findings referenced in playwright.runs.get and the Markdown files (BUGS.md / FAQ.md / DOCS.md) created in the project root.",
       },
     ],
   })
@@ -417,7 +419,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     slot: 'composer.actions',
     label: t2('Insert latest report', 'Insérer dernier rapport'),
     icon: 'plus',
-    onActivate: { kind: 'rpc', method: 'report.insertLatest' },
+    onActivate: { kind: 'rpc', method: `${RPC_NAMESPACE}report.insertLatest` },
     visibleWhen: { hasMessage: false },
   })
 
@@ -448,7 +450,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
       {
         type: 'button',
         label: t2('Run', 'Lancer'),
-        onActivate: { kind: 'rpc', method: 'runs.start' },
+        onActivate: { kind: 'rpc', method: `${RPC_NAMESPACE}runs.start` },
       },
     ],
   })
@@ -496,7 +498,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
       {
         type: 'button',
         label: t2('Apply selected', 'Appliquer la sélection'),
-        onActivate: { kind: 'rpc', method: 'gh.applyCandidates' },
+        onActivate: { kind: 'rpc', method: `${RPC_NAMESPACE}gh.applyCandidates` },
       },
     ],
   })
@@ -518,13 +520,13 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     visibleWhen: { hasSession: true },
     source: {
       kind: 'rpc',
-      method: 'sessionStatus',
+      method: `${RPC_NAMESPACE}sessionStatus`,
       refreshMs: 2000,
       cacheScope: 'project',
     },
   })
 
-  registry.registerRpc('sessionStatus', async (_params, execCtx) => {
+  registry.registerRpc(`${RPC_NAMESPACE}sessionStatus`, async (_params, execCtx) => {
     try {
       const wd = execCtx?.workdir ?? workdir
       const runsForWd = orchestrator.list().filter((r) => r.workdir === wd)
@@ -558,7 +560,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     }
   })
 
-  registry.registerRpc('runs.list', async () => {
+  registry.registerRpc(`${RPC_NAMESPACE}runs.list`, async () => {
     return orchestrator.list().map((r): RunSummary => ({
       id: r.id,
       startedAt: r.startedAt,
@@ -571,7 +573,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     }))
   })
 
-  registry.registerRpc('runs.get', async (params: Record<string, unknown>) => {
+  registry.registerRpc(`${RPC_NAMESPACE}runs.get`, async (params: Record<string, unknown>) => {
     const id = String((params as any).id ?? '')
     const r = orchestrator.get(id)
     if (!r) return null
@@ -587,7 +589,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     return view
   })
 
-  registry.registerRpc('runs.start', async (params: Record<string, unknown>, execCtx: PluginToolContext) => {
+  registry.registerRpc(`${RPC_NAMESPACE}runs.start`, async (params: Record<string, unknown>, execCtx: PluginToolContext) => {
     if (execCtx?.workdir) workdir = execCtx.workdir
     const settings = readSettings(registry, execCtx)
     const url = (params?.url as string) ?? settings.targetUrl ?? ''
@@ -596,7 +598,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     const activeRun = orchestrator.findRunningForWorkdir(workdir)
     if (activeRun && !force) {
       throw new Error(
-        `a Playwright run is already active for this project (runId=${activeRun.id}). Pass {force:true} to start another or call runs.stop first.`,
+        `a Playwright run is already active for this project (runId=${activeRun.id}). Pass {force:true} to start another or call playwright.runs.stop first.`,
       )
     }
     const input: StartRunInput = {
@@ -609,18 +611,18 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     return await orchestrator.start(input)
   })
 
-  registry.registerRpc('runs.stop', async (params: Record<string, unknown>) => {
+  registry.registerRpc(`${RPC_NAMESPACE}runs.stop`, async (params: Record<string, unknown>) => {
     const id = String((params as any).id ?? '')
     return await orchestrator.stop(id)
   })
 
-  registry.registerRpc('runs.cleanup', async (params: Record<string, unknown> = {}) => {
+  registry.registerRpc(`${RPC_NAMESPACE}runs.cleanup`, async (params: Record<string, unknown> = {}) => {
     const olderThanDays = Number((params as any).olderThanDays ?? 30)
     const dryRun = Boolean((params as any).dryRun)
     return await orchestrator.cleanup(olderThanDays, dryRun)
   })
 
-  registry.registerRpc('report.preview', async (params: Record<string, unknown>) => {
+  registry.registerRpc(`${RPC_NAMESPACE}report.preview`, async (params: Record<string, unknown>) => {
     const id = String((params as any).id ?? '')
     const kind = (params as any).kind as 'bug' | 'faq' | 'docs'
     const run = orchestrator.get(id)
@@ -662,7 +664,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     }
   })
 
-  registry.registerRpc('report.insertLatest', async () => {
+  registry.registerRpc(`${RPC_NAMESPACE}report.insertLatest`, async () => {
     const workdirRoot = workdir
     const files = ['BUGS.md', 'FAQ.md', 'DOCS.md']
     for (const f of files) {
@@ -672,7 +674,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     return { inserted: null, path: null }
   })
 
-  registry.registerRpc('gh.applyCandidates', async (params: Record<string, unknown> = {}) => {
+  registry.registerRpc(`${RPC_NAMESPACE}gh.applyCandidates`, async (params: Record<string, unknown> = {}) => {
     const runId = String((params as any).runId ?? '')
     const ids = Array.isArray((params as any).ids) ? (params as any).ids : []
     const run = orchestrator.get(runId)
@@ -723,7 +725,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     return { applied: created.length, urls: created }
   })
 
-  registry.registerRpc('pool.stats', async () => {
+  registry.registerRpc(`${RPC_NAMESPACE}pool.stats`, async () => {
     const runs = orchestrator.list()
     return {
       runsInMemory: runs.length,
@@ -736,7 +738,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
     }
   })
 
-  registry.registerRpc('config.validate', async (_params, execCtx: PluginToolContext) => {
+  registry.registerRpc(`${RPC_NAMESPACE}config.validate`, async (_params, execCtx: PluginToolContext) => {
     const s = readSettings(registry, execCtx)
     const pkgRoot = getPkgRoot()
     const llmReachable = await probeLLMReachable(s.llmEndpoint)
@@ -766,7 +768,7 @@ export function register(registry: PluginRegistry): () => Promise<void> {
             label: t2('Yes', 'Oui'),
             onActivate: {
               kind: 'rpc',
-              method: 'runs.start',
+              method: `${RPC_NAMESPACE}runs.start`,
               params: { mode: 'bugs' },
             },
           },
