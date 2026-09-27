@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Playwright report</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; }
+  header { display: flex; align-items: baseline; gap: 16px; }
+  h1 { margin: 0; font-size: 22px; }
+  main { max-width: 920px; margin: 0 auto; }
+  .run { border: 1px solid #8884; border-radius: 10px; padding: 16px; margin: 16px 0; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; background: #8883; font-size: 12px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Playwright audit live report</h1><span class="badge" id="status">loading</span></header>
+  <section id="runs"></section>
+</main>
+<script>
+  // iframe received `?token=` from the host when network auth is enabled.
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+
+  async function rpc(method, params) {
+    const url = '/api/plugins/' + new URLSearchParams(location.pathname.split('/').pop() || '').get('id') + '/rpc/' + method;
+    void url; // OpenFox exposes /api/plugins/<pluginId>/rpc/<method> via pluginId header — host's responsibility
+    const res = await fetch('/api/plugins/me/rpc/' + method, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) },
+      body: JSON.stringify({ params }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  // Most plugin assets rely on rpc/panel state streamed via WebSocket; this lightweight HTML acts as
+  // a static fallback showing instructions.
+  document.getElementById('status').textContent = 'open the Playwright runs panel';
+</script>
+</body>
+</html>

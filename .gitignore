@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.openfox-autonomous-playwright/
+*.log
+.DS_Store
