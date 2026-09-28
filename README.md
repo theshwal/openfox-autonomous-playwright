@@ -116,8 +116,8 @@ npx playwright install chromium
 |---|---|
 | `Chromium failed to launch` | Lancer `npx playwright install chromium` puis recharger le plugin. |
 | `gh issue create` échoue silencieusement | Vérifier `gh auth status` ; `ghMode=preview` ouvre un panel UI pour rejouer la création. |
-| Workers en boucle infinie | Baisser `maxPages` / `maxDurationMs`, puis `runs.stop`. |
-| `ENOSPC: no space left` | Réduire `screenshotMode` à `off` ou nettoyer via RPC `runs.cleanup`. |
+| Workers en boucle infinie | Baisser `maxPages` / `maxDurationMs`, puis `playwright.runs.stop`. |
+| `ENOSPC: no space left` | Réduire `screenshotMode` à `off` ou nettoyer via RPC `playwright.runs.cleanup`. |
 | LLM unreachable | Vérifier `OPENFOX_LLM_URL` / `llmEndpoint` ; `playwright_discover` retourne le verdict. |
 | Pas d'issue créée en `ghMode=auto` | `gh auth status` non-zero, ou > 20 candidats, ou repo Git absent → fallback BUGS.md. |
 

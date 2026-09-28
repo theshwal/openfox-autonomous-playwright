@@ -75,10 +75,10 @@ describe('plugin register()', () => {
     expect(cmdIds).toContain('playwright-stop')
 
     const rpcMethods = fake.calls.rpc.map((r) => r.method)
-    expect(rpcMethods).toContain('runs.list')
-    expect(rpcMethods).toContain('runs.start')
-    expect(rpcMethods).toContain('runs.stop')
-    expect(rpcMethods).toContain('config.validate')
+    expect(rpcMethods).toContain('playwright.runs.list')
+    expect(rpcMethods).toContain('playwright.runs.start')
+    expect(rpcMethods).toContain('playwright.runs.stop')
+    expect(rpcMethods).toContain('playwright.config.validate')
 
     const actionIds = fake.calls.uiAction.map((a) => a.id)
     expect(actionIds).toContain('autopw-launch')
@@ -119,10 +119,10 @@ describe('plugin register()', () => {
     }
   })
 
-  it('runs.start RPC errors when no URL', async () => {
+  it('playwright.runs.start RPC errors when no URL', async () => {
     const fake = makeFakeRegistry()
     register(fake as any)
-    const start = fake.calls.rpc.find((r: any) => r.method === 'runs.start').handler
+    const start = fake.calls.rpc.find((r: any) => r.method === 'playwright.runs.start').handler
     await expect(start({})).rejects.toThrow(/no target URL/i)
   })
 })
